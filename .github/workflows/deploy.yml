@@ -3,12 +3,13 @@ name: Deploy React App to S3
 on:
   push:
     branches:
-      - main  # or 'master' if you're using that
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
+    environment:
+      name: deploy-approval  # ✅ Must match the environment you created in GitHub settings
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -34,7 +35,7 @@ jobs:
         with:
           args: --delete
         env:
-          AWS_S3_BUCKET: shahzaib001  # ✅ your actual bucket name
+          AWS_S3_BUCKET: shahzaib001
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SOURCE_DIR: dist
