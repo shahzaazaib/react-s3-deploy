@@ -1,0 +1,40 @@
+name: Deploy React App to S3
+
+on:
+  push:
+    branches:
+      - main  # or 'master' if you're using that
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Replace API variables in App.jsx
+        run: |
+          sed -i "s|process.env.API_BASE_URL|\"${{ secrets.API_BASE_URL }}\"|g" src/App.jsx
+          sed -i "s|process.env.API_KEY|\"${{ secrets.API_KEY }}\"|g" src/App.jsx
+
+      - name: Build the React app
+        run: npm run build
+
+      - name: Deploy to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read --delete
+        env:
+          AWS_S3_BUCKET: shahzaib001  # ✅ your actual bucket name
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SOURCE_DIR: dist
