@@ -1,15 +1,36 @@
-name: Deploy React App to S3
+name: CI Pipeline with SonarCloud and Auto Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  sonarcloud:
+    name: SonarCloud Scan
     runs-on: ubuntu-latest
-    environment:
-      name: deploy-approval  # ✅ Must match the environment you created in GitHub settings
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run SonarCloud Scan
+        run: |
+          cd ..  # adjust if sonar-scanner.js is in parent folder
+          npm install -g sonarqube-scanner
+          node sonar-scanner.js
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  build-and-deploy:
+    name: Build and Deploy React App
+    needs: sonarcloud
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -17,12 +38,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 22.17.0
+          node-version: 18
 
       - name: Install dependencies
         run: npm install
 
-      - name: Replace API variables in App.jsx
+      - name: Replace API variables
         run: |
           sed -i "s|process.env.API_BASE_URL|\"${{ secrets.API_BASE_URL }}\"|g" src/App.jsx
           sed -i "s|process.env.API_KEY|\"${{ secrets.API_KEY }}\"|g" src/App.jsx
